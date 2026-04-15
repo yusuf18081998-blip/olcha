@@ -378,9 +378,9 @@
   <!-- TIMER CARD -->
   <div class="timer-card">
     <div class="mode-tabs">
-      <button class="mode-btn active" onclick="setMode('focus',25,'Diqqat vaqti')">Diqqat</button>
+      <button class="mode-btn active" onclick="setMode('focus',45,'Diqqat vaqti')">Diqqat</button>
       <button class="mode-btn" onclick="setMode('short',5,'Qisqa tanaffus')">Tanaffus</button>
-      <button class="mode-btn" onclick="setMode('long',15,'Uzoq tanaffus')">Uzoq</button>
+      <button class="mode-btn" onclick="setMode('long',25,'Uzoq tanaffus')">Uzoq</button>
     </div>
 
     <div class="circle-wrap">
@@ -389,7 +389,7 @@
         <circle class="c-prog" id="prog" cx="100" cy="100" r="90"/>
       </svg>
       <div class="circle-inner">
-        <div class="time-display" id="tDisp">25:00</div>
+        <div class="time-display" id="tDisp">45:00</div>
         <div class="time-label" id="tLabel">Diqqat vaqti</div>
       </div>
     </div>
@@ -398,6 +398,21 @@
       <button class="btn-round" onclick="resetTimer()" title="Qayta">↺</button>
       <button class="btn-start" id="startBtn" onclick="toggleTimer()">Start</button>
       <button class="btn-round" onclick="skipSession()" title="O'tkazish">⏭</button>
+    </div>
+
+    <!-- MUSIC PLAYER -->
+    <div id="musicPanel" style="margin-top:14px; background:var(--bg2); border-radius:12px; padding:12px 14px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+        <span style="font-size:13px; font-weight:600; color:var(--text);">🎵 Musiqa</span>
+        <button id="musicToggleBtn" onclick="toggleMusic()" style="background:var(--red);color:#fff;border:none;border-radius:20px;padding:4px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">Yoqish</button>
+      </div>
+      <div id="trackList" style="display:flex; flex-direction:column; gap:6px; margin-bottom:10px;"></div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span style="font-size:13px;">🔈</span>
+        <input type="range" id="volSlider" min="0" max="100" value="70" step="1" oninput="setVolume(this.value)" style="flex:1; accent-color:var(--red);">
+        <span style="font-size:13px;">🔊</span>
+        <span id="volVal" style="font-size:12px; color:var(--text2); min-width:28px; text-align:right;">70%</span>
+      </div>
     </div>
 
     <div class="session-dots" id="dots"></div>
@@ -436,12 +451,159 @@
 
 <script>
   // --- State ---
-  let totalSecs = 25*60, remaining = 25*60;
+  let totalSecs = 45*60, remaining = 45*60;
   let running = false, iv = null;
   let sessions = 0, mins = 0;
   let tasks = JSON.parse(localStorage.getItem('olcha_tasks')||'[]');
   let showInp = false;
-  const CIRC = 2 * Math.PI * 90; // 565.49
+  const CIRC = 2 * Math.PI * 90;
+
+  // ===================== MUSIC ENGINE =====================
+  let audioCtx = null, musicNodes = [], musicOn = false;
+  let masterGain = null, currentTrackIdx = 0, volLevel = 0.70;
+
+  // 8 unique lo-fi tracks defined as note sequences + style config
+  const TRACKS = [
+    { name: '🌿 Lo-fi Tinch',    bpm: 75,  bass: [65,65,60,62], melody: [523,659,784,659,587,523,440,523], wave:'sine',    color:'#4CAF50' },
+    { name: '🌙 Kech Sakin',     bpm: 60,  bass: [55,55,58,53], melody: [440,494,523,587,523,494,440,415], wave:'triangle',color:'#5C6BC0' },
+    { name: '🔥 Energiya',       bpm: 95,  bass: [82,82,77,80], melody: [659,784,880,784,740,659,587,659], wave:'square',  color:'#E53935' },
+    { name: '🌊 Chuqur Fokus',   bpm: 55,  bass: [49,49,52,46], melody: [392,440,494,440,415,392,370,392], wave:'sine',    color:'#0288D1' },
+    { name: '☕ Ertalab Qahva',  bpm: 80,  bass: [73,73,68,70], melody: [587,659,740,659,622,587,523,587], wave:'triangle',color:'#795548' },
+    { name: '⚡ Tez Ritm',       bpm: 110, bass: [98,98,92,95], melody: [784,880,988,880,831,784,740,784], wave:'sawtooth',color:'#FF6F00' },
+    { name: '🎹 Piano Hissi',    bpm: 65,  bass: [58,58,62,55], melody: [494,523,587,659,587,523,494,440], wave:'triangle',color:'#AB47BC' },
+    { name: '🌸 Bahor Shabadi',  bpm: 70,  bass: [61,61,65,58], melody: [554,622,698,622,587,554,494,554], wave:'sine',    color:'#EC407A' },
+  ];
+
+  function renderTrackList() {
+    const el = document.getElementById('trackList');
+    el.innerHTML = TRACKS.map((t, i) => `
+      <div onclick="selectTrack(${i})" id="tr${i}" style="
+        display:flex; align-items:center; gap:8px;
+        padding:7px 10px; border-radius:8px; cursor:pointer;
+        background:${i===currentTrackIdx ? 'var(--white)' : 'transparent'};
+        border:1px solid ${i===currentTrackIdx ? t.color : 'transparent'};
+        transition: all 0.15s;
+      ">
+        <div style="width:8px;height:8px;border-radius:50%;background:${t.color};flex-shrink:0;"></div>
+        <span style="font-size:13px;font-weight:${i===currentTrackIdx?'600':'400'};color:var(--text);flex:1;">${t.name}</span>
+        ${musicOn && i===currentTrackIdx ? '<span style="font-size:10px;color:'+t.color+';font-weight:700;">▶ IJRO</span>' : ''}
+      </div>
+    `).join('');
+  }
+
+  function selectTrack(i) {
+    currentTrackIdx = i;
+    renderTrackList();
+    if (musicOn) { stopMusic(); startMusic(); }
+  }
+
+  function setVolume(v) {
+    volLevel = v / 100;
+    document.getElementById('volVal').textContent = v + '%';
+    if (masterGain) masterGain.gain.setValueAtTime(volLevel, audioCtx.currentTime);
+  }
+
+  function startMusic() {
+    if (musicOn) return;
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    musicOn = true;
+
+    masterGain = audioCtx.createGain();
+    masterGain.gain.setValueAtTime(volLevel, audioCtx.currentTime);
+    masterGain.connect(audioCtx.destination);
+
+    const track = TRACKS[currentTrackIdx];
+    const beatInterval = 60 / track.bpm;
+
+    // Bass pulse
+    let beatCount = 0;
+    function doBeat() {
+      if (!musicOn) return;
+      const freq = 2 * track.bass[beatCount % track.bass.length];
+      const osc = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      g.gain.setValueAtTime(0.5, audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + beatInterval * 0.8);
+      osc.connect(g); g.connect(masterGain);
+      osc.start(); osc.stop(audioCtx.currentTime + beatInterval * 0.9);
+      beatCount++;
+      setTimeout(doBeat, beatInterval * 1000);
+    }
+    doBeat();
+
+    // Hi-hat
+    function doHat() {
+      if (!musicOn) return;
+      const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.05, audioCtx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let j = 0; j < data.length; j++) data[j] = (Math.random() * 2 - 1) * 0.15;
+      const src = audioCtx.createBufferSource();
+      const g = audioCtx.createGain();
+      const filt = audioCtx.createBiquadFilter();
+      filt.type = 'highpass'; filt.frequency.value = 8000;
+      src.buffer = buf;
+      g.gain.setValueAtTime(0.3, audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+      src.connect(filt); filt.connect(g); g.connect(masterGain);
+      src.start();
+      setTimeout(doHat, (beatInterval * 500));
+    }
+    doHat();
+
+    // Melody
+    let mi = 0;
+    function doNote() {
+      if (!musicOn) return;
+      const freq = track.melody[mi % track.melody.length];
+      const osc = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      osc.type = track.wave;
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      g.gain.setValueAtTime(0.22, audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + beatInterval * 1.2);
+      osc.connect(g); g.connect(masterGain);
+      osc.start(); osc.stop(audioCtx.currentTime + beatInterval * 1.2);
+      mi++;
+      setTimeout(doNote, beatInterval * 750);
+    }
+    doNote();
+
+    // Pad chord
+    [1, 1.26, 1.5, 1.89].forEach(ratio => {
+      const baseFreq = track.bass[0] * ratio * 0.5;
+      const osc = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(baseFreq, audioCtx.currentTime);
+      g.gain.setValueAtTime(0.04, audioCtx.currentTime);
+      osc.connect(g); g.connect(masterGain);
+      osc.start();
+      musicNodes.push(osc, g);
+    });
+
+    musicNodes.push(masterGain);
+    document.getElementById('musicToggleBtn').textContent = 'O\'chirish';
+    document.getElementById('musicToggleBtn').style.background = '#666';
+    renderTrackList();
+  }
+
+  function stopMusic() {
+    musicOn = false;
+    musicNodes.forEach(n => { try { n.stop && n.stop(); n.disconnect && n.disconnect(); } catch(e){} });
+    musicNodes = [];
+    masterGain = null;
+    if (audioCtx) { audioCtx.close(); audioCtx = null; }
+    document.getElementById('musicToggleBtn').textContent = 'Yoqish';
+    document.getElementById('musicToggleBtn').style.background = 'var(--red)';
+    renderTrackList();
+  }
+
+  function toggleMusic() {
+    musicOn ? stopMusic() : startMusic();
+  }
+  // ===================== END MUSIC =====================
 
   // --- Clock ---
   function updateClock() {
@@ -486,10 +648,12 @@
       clearInterval(iv); running = false;
       document.getElementById('startBtn').textContent = 'Davom';
       document.getElementById('startBtn').classList.remove('pulse');
+      stopMusic();
     } else {
       running = true;
       document.getElementById('startBtn').textContent = 'Pauza';
       document.getElementById('startBtn').classList.add('pulse');
+      startMusic();
       iv = setInterval(()=>{
         remaining--;
         if (remaining <= 0) {
@@ -498,8 +662,8 @@
           document.getElementById('startBtn').textContent = 'Start';
           document.getElementById('startBtn').classList.remove('pulse');
           remaining = 0;
+          stopMusic();
           updateStats(); renderDots();
-          // Vibrate if supported
           if(navigator.vibrate) navigator.vibrate([200,100,200]);
         }
         render();
@@ -512,6 +676,7 @@
     remaining = totalSecs;
     document.getElementById('startBtn').textContent = 'Start';
     document.getElementById('startBtn').classList.remove('pulse');
+    stopMusic();
     render();
   }
 
@@ -521,6 +686,7 @@
     sessions++; remaining = totalSecs;
     document.getElementById('startBtn').textContent = 'Start';
     document.getElementById('startBtn').classList.remove('pulse');
+    stopMusic();
     render(); updateStats(); renderDots();
   }
 
@@ -591,7 +757,7 @@
   }
 
   // --- Init ---
-  render(); renderDots(); renderTasks(); updateStats();
+  render(); renderDots(); renderTasks(); updateStats(); renderTrackList();
 </script>
 </body>
 </html>
