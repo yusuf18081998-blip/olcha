@@ -2,177 +2,152 @@
 <html lang="uz">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Olcha — Focus Timer</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Olcha PRO — Focus</title>
 
 <style>
-/* ====== SIZNING BARCHA CSS O‘ZGARMAGAN ====== */
-/* (hech narsaga tegilmadi, to‘liq sizniki) */
+body{
+  margin:0;
+  font-family:Arial;
+  background:#f5f5f5;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+}
+
+.card{
+  background:#fff;
+  padding:20px;
+  border-radius:20px;
+  width:320px;
+  text-align:center;
+  box-shadow:0 10px 30px rgba(0,0,0,0.1);
+}
+
+.time{
+  font-size:40px;
+  margin:20px 0;
+}
+
+button{
+  padding:10px 15px;
+  margin:5px;
+  border:none;
+  border-radius:10px;
+  cursor:pointer;
+}
+
+.start{background:#C0593A;color:#fff;}
+.stop{background:#444;color:#fff;}
+
+small{color:gray;}
 </style>
 </head>
 
 <body>
 
-<!-- 🌧️ RAIN AUDIO QO‘SHILDI -->
-<audio id="rainAudio" loop preload="auto">
-  <source src="https://actions.google.com/sounds/v1/weather/rain_on_roof.ogg" type="audio/ogg">
+<div class="card">
+  <h2>🍒 Olcha PRO</h2>
+
+  <div class="time" id="time">25:00</div>
+
+  <button class="start" onclick="startAll()">Start</button>
+  <button class="stop" onclick="stopAll()">Stop</button>
+
+  <br><br>
+
+  🌧️ Rain volume<br>
+  <input type="range" min="0" max="100" value="40" oninput="setRain(this.value)">
+
+  <br><br>
+  <small>Focus + Rain + Music</small>
+</div>
+
+<!-- 🌧️ RAIN AUDIO -->
+<audio id="rain" loop>
+  <source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8f6b2b2.mp3?filename=rain-ambient-110622.mp3" type="audio/mpeg">
 </audio>
 
-<div class="status-bar">
-  <span class="status-time" id="clockNow">09:41</span>
-  <div class="status-icons">
-    <span>📶</span>
-    <span>🔋</span>
-  </div>
-</div>
-
-<div class="wrap">
-
-  <!-- HEADER -->
-  <div class="header">
-    <div class="logo-icon">🍒</div>
-    <div class="header-text">
-      <h1>Olcha</h1>
-      <p>Focus Timer & Tasks</p>
-    </div>
-    <div class="header-right">
-      <div class="streak-badge" id="streakBadge">🔥 0 kun</div>
-    </div>
-  </div>
-
-  <!-- TIMER CARD -->
-  <div class="timer-card">
-    <div class="mode-tabs">
-      <button class="mode-btn active" onclick="setMode('focus',45,'Diqqat vaqti')">Diqqat</button>
-      <button class="mode-btn" onclick="setMode('short',5,'Qisqa tanaffus')">Tanaffus</button>
-      <button class="mode-btn" onclick="setMode('long',25,'Uzoq tanaffus')">Uzoq</button>
-    </div>
-
-    <div class="circle-wrap">
-      <svg class="circle-svg" viewBox="0 0 200 200">
-        <circle class="c-bg" cx="100" cy="100" r="90"/>
-        <circle class="c-prog" id="prog" cx="100" cy="100" r="90"/>
-      </svg>
-      <div class="circle-inner">
-        <div class="time-display" id="tDisp">45:00</div>
-        <div class="time-label" id="tLabel">Diqqat vaqti</div>
-      </div>
-    </div>
-
-    <div class="controls">
-      <button class="btn-round" onclick="resetTimer()">↺</button>
-      <button class="btn-start" id="startBtn" onclick="toggleTimer()">Start</button>
-      <button class="btn-round" onclick="skipSession()">⏭</button>
-    </div>
-
-    <div class="session-dots" id="dots"></div>
-  </div>
-
-</div>
-
 <script>
-  let totalSecs = 45*60, remaining = 45*60;
-  let running = false, iv = null;
+let t = 25*60;
+let iv = null;
+let running = false;
 
-  let musicOn = false;
-  let audioCtx = null;
-  let musicNodes = [];
-  let masterGain = null;
+let audioCtx = null;
+let rain = document.getElementById("rain");
 
-  // 🌧️ RAIN AUDIO
-  const rainAudio = document.getElementById("rainAudio");
+// TIMER
+function startTimer(){
+  iv = setInterval(()=>{
+    if(t<=0){
+      stopAll();
+      return;
+    }
+    t--;
+    let m = String(Math.floor(t/60)).padStart(2,"0");
+    let s = String(t%60).padStart(2,"0");
+    document.getElementById("time").innerText = m+":"+s;
+  },1000);
+}
 
-  function startMusic() {
-    if (musicOn) return;
-    musicOn = true;
+// 🌧️ + 🎵 START
+function startAll(){
 
+  if(!running){
+    running = true;
+
+    // audio context (required fix)
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-    masterGain = audioCtx.createGain();
-    masterGain.gain.value = 0.6;
-    masterGain.connect(audioCtx.destination);
+    // rain start (fixed)
+    rain.volume = 0.4;
+    rain.currentTime = 0;
 
-    // 🌧️ YOMG‘IRNI YURDIRISH
-    rainAudio.volume = 0.4;
-    rainAudio.play();
-
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-
-    osc.type = "sine";
-    osc.frequency.value = 220;
-
-    gain.gain.value = 0.05;
-
-    osc.connect(gain);
-    gain.connect(masterGain);
-
-    osc.start();
-    musicNodes.push(osc, gain);
-  }
-
-  function stopMusic() {
-    musicOn = false;
-
-    musicNodes.forEach(n => {
-      try { n.stop && n.stop(); n.disconnect && n.disconnect(); } catch(e){}
+    rain.play().catch(e=>{
+      console.log("Rain blocked:", e);
     });
 
-    musicNodes = [];
+    // soft focus tone (optional PRO vibe)
+    let osc = audioCtx.createOscillator();
+    let gain = audioCtx.createGain();
 
-    if (audioCtx) {
-      audioCtx.close();
-      audioCtx = null;
-    }
+    osc.type = "sine";
+    osc.frequency.value = 200;
+    gain.gain.value = 0.03;
 
-    // 🌧️ YOMG‘IRNI TO‘XTATISH
-    rainAudio.pause();
-    rainAudio.currentTime = 0;
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    osc.start();
+
+    startTimer();
+  }
+}
+
+// STOP EVERYTHING
+function stopAll(){
+  running = false;
+  clearInterval(iv);
+  t = 25*60;
+
+  document.getElementById("time").innerText = "25:00";
+
+  if(rain){
+    rain.pause();
+    rain.currentTime = 0;
   }
 
-  function toggleTimer() {
-    if (running) {
-      clearInterval(iv);
-      running = false;
-      stopMusic();
-      document.getElementById('startBtn').textContent = "Davom";
-    } else {
-      running = true;
-      startMusic();
-
-      document.getElementById('startBtn').textContent = "Pauza";
-
-      iv = setInterval(() => {
-        remaining--;
-
-        if (remaining <= 0) {
-          clearInterval(iv);
-          running = false;
-          stopMusic();
-          remaining = 0;
-          document.getElementById('startBtn').textContent = "Start";
-        }
-
-        let m = String(Math.floor(remaining/60)).padStart(2,"0");
-        let s = String(remaining%60).padStart(2,"0");
-        document.getElementById("tDisp").textContent = m+":"+s;
-
-      }, 1000);
-    }
+  if(audioCtx){
+    audioCtx.close();
+    audioCtx = null;
   }
+}
 
-  function resetTimer(){
-    clearInterval(iv);
-    running = false;
-    remaining = totalSecs;
-    stopMusic();
-    document.getElementById('startBtn').textContent = "Start";
-  }
-
-  function skipSession(){
-    resetTimer();
-  }
+// RAIN CONTROL
+function setRain(v){
+  rain.volume = v/100;
+}
 </script>
 
 </body>
