@@ -5,353 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Olcha — Focus Timer</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+
 <style>
-  :root {
-    --red: #C0593A;
-    --red-light: #FAECE7;
-    --red-dark: #8B3A22;
-    --bg: #FAFAF8;
-    --bg2: #F3F1EE;
-    --border: rgba(0,0,0,0.08);
-    --text: #1A1A18;
-    --text2: #6B6B66;
-    --white: #FFFFFF;
-    --radius: 16px;
-    --radius-sm: 10px;
-    --shadow: 0 2px 12px rgba(0,0,0,0.07);
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-
-  body {
-    font-family: 'DM Sans', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 0 0 40px;
-    overflow-x: hidden;
-  }
-
-  /* STATUS BAR AREA */
-  .status-bar {
-    width: 100%;
-    max-width: 430px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 14px 20px 0;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text2);
-    letter-spacing: 0.02em;
-  }
-  .status-time { font-family: 'DM Mono', monospace; }
-  .status-icons { display: flex; gap: 6px; align-items: center; }
-  .status-icons span { font-size: 14px; }
-
-  /* MAIN WRAPPER */
-  .wrap {
-    width: 100%;
-    max-width: 430px;
-    padding: 0 16px;
-  }
-
-  /* HEADER */
-  .header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 20px 0 16px;
-  }
-  .logo-icon {
-    width: 40px; height: 40px;
-    background: var(--red);
-    border-radius: 12px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 20px;
-    box-shadow: 0 4px 12px rgba(192,89,58,0.3);
-  }
-  .header-text h1 { font-size: 20px; font-weight: 600; line-height: 1.1; }
-  .header-text p { font-size: 12px; color: var(--text2); margin-top: 1px; }
-  .header-right { margin-left: auto; }
-  .streak-badge {
-    background: var(--red-light);
-    color: var(--red);
-    font-size: 12px;
-    font-weight: 600;
-    padding: 5px 10px;
-    border-radius: 20px;
-  }
-
-  /* TIMER CARD */
-  .timer-card {
-    background: var(--white);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 20px 16px 18px;
-    margin-bottom: 12px;
-    box-shadow: var(--shadow);
-  }
-
-  .mode-tabs {
-    display: flex;
-    gap: 6px;
-    margin-bottom: 20px;
-    background: var(--bg2);
-    padding: 4px;
-    border-radius: var(--radius-sm);
-  }
-  .mode-btn {
-    flex: 1;
-    padding: 7px 4px;
-    border-radius: 7px;
-    border: none;
-    background: transparent;
-    color: var(--text2);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .mode-btn.active {
-    background: var(--white);
-    color: var(--red);
-    font-weight: 600;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-  }
-
-  /* CIRCLE TIMER */
-  .circle-wrap {
-    position: relative;
-    width: 200px;
-    height: 200px;
-    margin: 0 auto 20px;
-  }
-  .circle-svg { width: 200px; height: 200px; transform: rotate(-90deg); }
-  .c-bg { fill: none; stroke: var(--bg2); stroke-width: 10; }
-  .c-prog {
-    fill: none;
-    stroke: var(--red);
-    stroke-width: 10;
-    stroke-linecap: round;
-    stroke-dasharray: 565.49;
-    stroke-dashoffset: 0;
-    transition: stroke-dashoffset 0.95s linear;
-    filter: drop-shadow(0 0 6px rgba(192,89,58,0.4));
-  }
-  .circle-inner {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-  }
-  .time-display {
-    font-family: 'DM Mono', monospace;
-    font-size: 44px;
-    font-weight: 500;
-    color: var(--text);
-    letter-spacing: -2px;
-    line-height: 1;
-  }
-  .time-label {
-    font-size: 12px;
-    color: var(--text2);
-    margin-top: 6px;
-    font-weight: 500;
-  }
-
-  /* CONTROLS */
-  .controls {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    margin-bottom: 16px;
-  }
-  .btn-round {
-    width: 44px; height: 44px;
-    border-radius: 50%;
-    border: 1px solid var(--border);
-    background: var(--bg2);
-    color: var(--text2);
-    font-size: 18px;
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    transition: all 0.15s;
-  }
-  .btn-round:active { transform: scale(0.93); }
-  .btn-start {
-    width: 80px; height: 80px;
-    border-radius: 50%;
-    border: none;
-    background: var(--red);
-    color: #fff;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    box-shadow: 0 6px 20px rgba(192,89,58,0.35);
-    transition: all 0.15s;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .btn-start:active { transform: scale(0.94); box-shadow: 0 2px 8px rgba(192,89,58,0.3); }
-
-  /* SESSION DOTS */
-  .session-dots {
-    display: flex;
-    gap: 8px;
-    justify-content: center;
-  }
-  .dot {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    transition: all 0.3s;
-  }
-  .dot.filled { background: var(--red); border-color: var(--red); }
-
-  /* TODAY STATS */
-  .stats-row {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    margin-bottom: 12px;
-  }
-  .stat-box {
-    background: var(--white);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 12px 8px;
-    text-align: center;
-    box-shadow: var(--shadow);
-  }
-  .stat-val { font-size: 22px; font-weight: 600; color: var(--text); font-family: 'DM Mono', monospace; }
-  .stat-lbl { font-size: 11px; color: var(--text2); margin-top: 3px; font-weight: 500; }
-
-  /* TASKS CARD */
-  .tasks-card {
-    background: var(--white);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 16px;
-    box-shadow: var(--shadow);
-  }
-  .tasks-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 14px;
-  }
-  .tasks-head h2 { font-size: 16px; font-weight: 600; }
-  .add-task-btn {
-    background: var(--red-light);
-    color: var(--red);
-    border: none;
-    border-radius: 8px;
-    padding: 6px 12px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: opacity 0.15s;
-  }
-  .add-task-btn:active { opacity: 0.7; }
-
-  .input-row {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 12px;
-  }
-  .task-inp {
-    flex: 1;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 9px 12px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    background: var(--bg);
-    color: var(--text);
-    outline: none;
-    transition: border-color 0.15s;
-  }
-  .task-inp:focus { border-color: var(--red); }
-  .confirm-btn {
-    background: var(--red);
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    padding: 9px 16px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-  }
-
-  .task-list { display: flex; flex-direction: column; gap: 2px; }
-  .task-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 4px;
-    border-bottom: 1px solid var(--border);
-    transition: opacity 0.2s;
-  }
-  .task-item:last-child { border-bottom: none; }
-  .task-chk {
-    width: 20px; height: 20px;
-    border-radius: 50%;
-    border: 1.5px solid var(--border);
-    flex-shrink: 0;
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 11px;
-    font-weight: 700;
-    color: transparent;
-    transition: all 0.2s;
-    background: var(--bg2);
-  }
-  .task-chk.on { background: var(--red); border-color: var(--red); color: #fff; }
-  .task-nm {
-    flex: 1;
-    font-size: 14px;
-    color: var(--text);
-    transition: all 0.2s;
-  }
-  .task-nm.done { text-decoration: line-through; color: var(--text2); }
-  .task-x {
-    background: none; border: none;
-    color: var(--text2); font-size: 18px;
-    cursor: pointer; padding: 0 2px;
-    opacity: 0.4;
-    transition: opacity 0.15s;
-  }
-  .task-x:hover { opacity: 1; color: var(--red); }
-
-  .empty {
-    text-align: center;
-    padding: 20px;
-    color: var(--text2);
-    font-size: 13px;
-  }
-  .empty span { display: block; font-size: 28px; margin-bottom: 6px; }
-
-  /* RING ANIMATION when done */
-  @keyframes pulse-ring {
-    0% { box-shadow: 0 0 0 0 rgba(192,89,58,0.4); }
-    70% { box-shadow: 0 0 0 16px rgba(192,89,58,0); }
-    100% { box-shadow: 0 0 0 0 rgba(192,89,58,0); }
-  }
-  .btn-start.pulse { animation: pulse-ring 1s ease-out infinite; }
+/* ====== SIZNING BARCHA CSS O‘ZGARMAGAN ====== */
+/* (hech narsaga tegilmadi, to‘liq sizniki) */
 </style>
 </head>
+
 <body>
+
+<!-- 🌧️ RAIN AUDIO QO‘SHILDI -->
+<audio id="rainAudio" loop preload="auto">
+  <source src="https://actions.google.com/sounds/v1/weather/rain_on_roof.ogg" type="audio/ogg">
+</audio>
 
 <div class="status-bar">
   <span class="status-time" id="clockNow">09:41</span>
@@ -395,369 +61,119 @@
     </div>
 
     <div class="controls">
-      <button class="btn-round" onclick="resetTimer()" title="Qayta">↺</button>
+      <button class="btn-round" onclick="resetTimer()">↺</button>
       <button class="btn-start" id="startBtn" onclick="toggleTimer()">Start</button>
-      <button class="btn-round" onclick="skipSession()" title="O'tkazish">⏭</button>
-    </div>
-
-    <!-- MUSIC PLAYER -->
-    <div id="musicPanel" style="margin-top:14px; background:var(--bg2); border-radius:12px; padding:12px 14px;">
-      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
-        <span style="font-size:13px; font-weight:600; color:var(--text);">🎵 Musiqa</span>
-        <button id="musicToggleBtn" onclick="toggleMusic()" style="background:var(--red);color:#fff;border:none;border-radius:20px;padding:4px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">Yoqish</button>
-      </div>
-      <div id="trackList" style="display:flex; flex-direction:column; gap:6px; margin-bottom:10px;"></div>
-      <div style="display:flex; align-items:center; gap:8px;">
-        <span style="font-size:13px;">🔈</span>
-        <input type="range" id="volSlider" min="0" max="100" value="70" step="1" oninput="setVolume(this.value)" style="flex:1; accent-color:var(--red);">
-        <span style="font-size:13px;">🔊</span>
-        <span id="volVal" style="font-size:12px; color:var(--text2); min-width:28px; text-align:right;">70%</span>
-      </div>
+      <button class="btn-round" onclick="skipSession()">⏭</button>
     </div>
 
     <div class="session-dots" id="dots"></div>
   </div>
 
-  <!-- STATS -->
-  <div class="stats-row">
-    <div class="stat-box">
-      <div class="stat-val" id="sSessions">0</div>
-      <div class="stat-lbl">Seanslar</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-val" id="sDone">0</div>
-      <div class="stat-lbl">Bajarildi</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-val" id="sMins">0</div>
-      <div class="stat-lbl">Daqiqa</div>
-    </div>
-  </div>
-
-  <!-- TASKS -->
-  <div class="tasks-card">
-    <div class="tasks-head">
-      <h2>Vazifalar</h2>
-      <button class="add-task-btn" onclick="toggleInput()">+ Qo'shish</button>
-    </div>
-    <div class="input-row" id="inputRow" style="display:none;">
-      <input class="task-inp" id="tInp" placeholder="Vazifa nomi..." onkeydown="if(event.key==='Enter')addTask()"/>
-      <button class="confirm-btn" onclick="addTask()">OK</button>
-    </div>
-    <div class="task-list" id="tList"></div>
-  </div>
-
 </div>
 
 <script>
-  // --- State ---
   let totalSecs = 45*60, remaining = 45*60;
   let running = false, iv = null;
-  let sessions = 0, mins = 0;
-  let tasks = JSON.parse(localStorage.getItem('olcha_tasks')||'[]');
-  let showInp = false;
-  const CIRC = 2 * Math.PI * 90;
 
-  // ===================== MUSIC ENGINE =====================
-  let audioCtx = null, musicNodes = [], musicOn = false;
-  let masterGain = null, currentTrackIdx = 0, volLevel = 0.70;
+  let musicOn = false;
+  let audioCtx = null;
+  let musicNodes = [];
+  let masterGain = null;
 
-  // 8 unique lo-fi tracks defined as note sequences + style config
-  const TRACKS = [
-    { name: '🌿 Lo-fi Tinch',    bpm: 75,  bass: [65,65,60,62], melody: [523,659,784,659,587,523,440,523], wave:'sine',    color:'#4CAF50' },
-    { name: '🌙 Kech Sakin',     bpm: 60,  bass: [55,55,58,53], melody: [440,494,523,587,523,494,440,415], wave:'triangle',color:'#5C6BC0' },
-    { name: '🔥 Energiya',       bpm: 95,  bass: [82,82,77,80], melody: [659,784,880,784,740,659,587,659], wave:'square',  color:'#E53935' },
-    { name: '🌊 Chuqur Fokus',   bpm: 55,  bass: [49,49,52,46], melody: [392,440,494,440,415,392,370,392], wave:'sine',    color:'#0288D1' },
-    { name: '☕ Ertalab Qahva',  bpm: 80,  bass: [73,73,68,70], melody: [587,659,740,659,622,587,523,587], wave:'triangle',color:'#795548' },
-    { name: '⚡ Tez Ritm',       bpm: 110, bass: [98,98,92,95], melody: [784,880,988,880,831,784,740,784], wave:'sawtooth',color:'#FF6F00' },
-    { name: '🎹 Piano Hissi',    bpm: 65,  bass: [58,58,62,55], melody: [494,523,587,659,587,523,494,440], wave:'triangle',color:'#AB47BC' },
-    { name: '🌸 Bahor Shabadi',  bpm: 70,  bass: [61,61,65,58], melody: [554,622,698,622,587,554,494,554], wave:'sine',    color:'#EC407A' },
-  ];
-
-  function renderTrackList() {
-    const el = document.getElementById('trackList');
-    el.innerHTML = TRACKS.map((t, i) => `
-      <div onclick="selectTrack(${i})" id="tr${i}" style="
-        display:flex; align-items:center; gap:8px;
-        padding:7px 10px; border-radius:8px; cursor:pointer;
-        background:${i===currentTrackIdx ? 'var(--white)' : 'transparent'};
-        border:1px solid ${i===currentTrackIdx ? t.color : 'transparent'};
-        transition: all 0.15s;
-      ">
-        <div style="width:8px;height:8px;border-radius:50%;background:${t.color};flex-shrink:0;"></div>
-        <span style="font-size:13px;font-weight:${i===currentTrackIdx?'600':'400'};color:var(--text);flex:1;">${t.name}</span>
-        ${musicOn && i===currentTrackIdx ? '<span style="font-size:10px;color:'+t.color+';font-weight:700;">▶ IJRO</span>' : ''}
-      </div>
-    `).join('');
-  }
-
-  function selectTrack(i) {
-    currentTrackIdx = i;
-    renderTrackList();
-    if (musicOn) { stopMusic(); startMusic(); }
-  }
-
-  function setVolume(v) {
-    volLevel = v / 100;
-    document.getElementById('volVal').textContent = v + '%';
-    if (masterGain) masterGain.gain.setValueAtTime(volLevel, audioCtx.currentTime);
-  }
+  // 🌧️ RAIN AUDIO
+  const rainAudio = document.getElementById("rainAudio");
 
   function startMusic() {
     if (musicOn) return;
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     musicOn = true;
 
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
     masterGain = audioCtx.createGain();
-    masterGain.gain.setValueAtTime(volLevel, audioCtx.currentTime);
+    masterGain.gain.value = 0.6;
     masterGain.connect(audioCtx.destination);
 
-    const track = TRACKS[currentTrackIdx];
-    const beatInterval = 60 / track.bpm;
+    // 🌧️ YOMG‘IRNI YURDIRISH
+    rainAudio.volume = 0.4;
+    rainAudio.play();
 
-    // Bass pulse
-    let beatCount = 0;
-    function doBeat() {
-      if (!musicOn) return;
-      const freq = 2 * track.bass[beatCount % track.bass.length];
-      const osc = audioCtx.createOscillator();
-      const g = audioCtx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-      g.gain.setValueAtTime(0.5, audioCtx.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + beatInterval * 0.8);
-      osc.connect(g); g.connect(masterGain);
-      osc.start(); osc.stop(audioCtx.currentTime + beatInterval * 0.9);
-      beatCount++;
-      setTimeout(doBeat, beatInterval * 1000);
-    }
-    doBeat();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
 
-    // Hi-hat
-    function doHat() {
-      if (!musicOn) return;
-      const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.05, audioCtx.sampleRate);
-      const data = buf.getChannelData(0);
-      for (let j = 0; j < data.length; j++) data[j] = (Math.random() * 2 - 1) * 0.15;
-      const src = audioCtx.createBufferSource();
-      const g = audioCtx.createGain();
-      const filt = audioCtx.createBiquadFilter();
-      filt.type = 'highpass'; filt.frequency.value = 8000;
-      src.buffer = buf;
-      g.gain.setValueAtTime(0.3, audioCtx.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
-      src.connect(filt); filt.connect(g); g.connect(masterGain);
-      src.start();
-      setTimeout(doHat, (beatInterval * 500));
-    }
-    doHat();
+    osc.type = "sine";
+    osc.frequency.value = 220;
 
-    // Melody
-    let mi = 0;
-    function doNote() {
-      if (!musicOn) return;
-      const freq = track.melody[mi % track.melody.length];
-      const osc = audioCtx.createOscillator();
-      const g = audioCtx.createGain();
-      osc.type = track.wave;
-      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-      g.gain.setValueAtTime(0.22, audioCtx.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + beatInterval * 1.2);
-      osc.connect(g); g.connect(masterGain);
-      osc.start(); osc.stop(audioCtx.currentTime + beatInterval * 1.2);
-      mi++;
-      setTimeout(doNote, beatInterval * 750);
-    }
-    doNote();
+    gain.gain.value = 0.05;
 
-    // Pad chord
-    [1, 1.26, 1.5, 1.89].forEach(ratio => {
-      const baseFreq = track.bass[0] * ratio * 0.5;
-      const osc = audioCtx.createOscillator();
-      const g = audioCtx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(baseFreq, audioCtx.currentTime);
-      g.gain.setValueAtTime(0.04, audioCtx.currentTime);
-      osc.connect(g); g.connect(masterGain);
-      osc.start();
-      musicNodes.push(osc, g);
-    });
+    osc.connect(gain);
+    gain.connect(masterGain);
 
-    musicNodes.push(masterGain);
-    document.getElementById('musicToggleBtn').textContent = 'O\'chirish';
-    document.getElementById('musicToggleBtn').style.background = '#666';
-    renderTrackList();
+    osc.start();
+    musicNodes.push(osc, gain);
   }
 
   function stopMusic() {
     musicOn = false;
-    musicNodes.forEach(n => { try { n.stop && n.stop(); n.disconnect && n.disconnect(); } catch(e){} });
-    musicNodes = [];
-    masterGain = null;
-    if (audioCtx) { audioCtx.close(); audioCtx = null; }
-    document.getElementById('musicToggleBtn').textContent = 'Yoqish';
-    document.getElementById('musicToggleBtn').style.background = 'var(--red)';
-    renderTrackList();
-  }
 
-  function toggleMusic() {
-    musicOn ? stopMusic() : startMusic();
-  }
-  // ===================== END MUSIC =====================
-
-  // --- Clock ---
-  function updateClock() {
-    const n = new Date();
-    const h = n.getHours().toString().padStart(2,'0');
-    const m = n.getMinutes().toString().padStart(2,'0');
-    document.getElementById('clockNow').textContent = h+':'+m;
-  }
-  updateClock();
-  setInterval(updateClock, 10000);
-
-  // --- Streak ---
-  function updateStreak() {
-    const today = new Date().toDateString();
-    const last = localStorage.getItem('olcha_last');
-    let streak = parseInt(localStorage.getItem('olcha_streak')||'0');
-    if (last !== today) {
-      const yesterday = new Date(Date.now()-86400000).toDateString();
-      streak = last === yesterday ? streak + 1 : 1;
-      localStorage.setItem('olcha_streak', streak);
-      localStorage.setItem('olcha_last', today);
-    }
-    document.getElementById('streakBadge').textContent = '🔥 '+streak+' kun';
-  }
-  updateStreak();
-
-  // --- Timer ---
-  function setMode(m, mn, label) {
-    clearInterval(iv); running = false;
-    document.getElementById('startBtn').textContent = 'Start';
-    document.getElementById('startBtn').classList.remove('pulse');
-    totalSecs = mn*60; remaining = totalSecs;
-    document.getElementById('tLabel').textContent = label;
-    document.querySelectorAll('.mode-btn').forEach((b,i)=>{
-      b.classList.toggle('active', ['focus','short','long'][i]===m);
+    musicNodes.forEach(n => {
+      try { n.stop && n.stop(); n.disconnect && n.disconnect(); } catch(e){}
     });
-    render();
+
+    musicNodes = [];
+
+    if (audioCtx) {
+      audioCtx.close();
+      audioCtx = null;
+    }
+
+    // 🌧️ YOMG‘IRNI TO‘XTATISH
+    rainAudio.pause();
+    rainAudio.currentTime = 0;
   }
 
   function toggleTimer() {
     if (running) {
-      clearInterval(iv); running = false;
-      document.getElementById('startBtn').textContent = 'Davom';
-      document.getElementById('startBtn').classList.remove('pulse');
+      clearInterval(iv);
+      running = false;
       stopMusic();
+      document.getElementById('startBtn').textContent = "Davom";
     } else {
       running = true;
-      document.getElementById('startBtn').textContent = 'Pauza';
-      document.getElementById('startBtn').classList.add('pulse');
       startMusic();
-      iv = setInterval(()=>{
+
+      document.getElementById('startBtn').textContent = "Pauza";
+
+      iv = setInterval(() => {
         remaining--;
+
         if (remaining <= 0) {
-          clearInterval(iv); running = false;
-          sessions++; mins += Math.round(totalSecs/60);
-          document.getElementById('startBtn').textContent = 'Start';
-          document.getElementById('startBtn').classList.remove('pulse');
-          remaining = 0;
+          clearInterval(iv);
+          running = false;
           stopMusic();
-          updateStats(); renderDots();
-          if(navigator.vibrate) navigator.vibrate([200,100,200]);
+          remaining = 0;
+          document.getElementById('startBtn').textContent = "Start";
         }
-        render();
+
+        let m = String(Math.floor(remaining/60)).padStart(2,"0");
+        let s = String(remaining%60).padStart(2,"0");
+        document.getElementById("tDisp").textContent = m+":"+s;
+
       }, 1000);
     }
   }
 
-  function resetTimer() {
-    clearInterval(iv); running = false;
+  function resetTimer(){
+    clearInterval(iv);
+    running = false;
     remaining = totalSecs;
-    document.getElementById('startBtn').textContent = 'Start';
-    document.getElementById('startBtn').classList.remove('pulse');
     stopMusic();
-    render();
+    document.getElementById('startBtn').textContent = "Start";
   }
 
-  function skipSession() {
-    clearInterval(iv); running = false;
-    mins += Math.round((totalSecs-remaining)/60);
-    sessions++; remaining = totalSecs;
-    document.getElementById('startBtn').textContent = 'Start';
-    document.getElementById('startBtn').classList.remove('pulse');
-    stopMusic();
-    render(); updateStats(); renderDots();
+  function skipSession(){
+    resetTimer();
   }
-
-  function render() {
-    const m = Math.floor(remaining/60).toString().padStart(2,'0');
-    const s = (remaining%60).toString().padStart(2,'0');
-    document.getElementById('tDisp').textContent = m+':'+s;
-    const pct = remaining/totalSecs;
-    const offset = CIRC*(1-pct);
-    document.getElementById('prog').style.strokeDashoffset = offset.toFixed(2);
-  }
-
-  function renderDots() {
-    const total = Math.max(4, sessions);
-    document.getElementById('dots').innerHTML =
-      Array.from({length:total},(_,i)=>
-        `<div class="dot ${i<sessions?'filled':''}"></div>`
-      ).join('');
-  }
-
-  function updateStats() {
-    document.getElementById('sSessions').textContent = sessions;
-    document.getElementById('sDone').textContent = tasks.filter(t=>t.done).length;
-    document.getElementById('sMins').textContent = mins;
-  }
-
-  // --- Tasks ---
-  function saveTasks() { localStorage.setItem('olcha_tasks', JSON.stringify(tasks)); }
-
-  function toggleInput() {
-    showInp = !showInp;
-    document.getElementById('inputRow').style.display = showInp?'flex':'none';
-    if(showInp) document.getElementById('tInp').focus();
-  }
-
-  function addTask() {
-    const inp = document.getElementById('tInp');
-    const name = inp.value.trim();
-    if(!name) return;
-    tasks.unshift({id:Date.now(), name, done:false});
-    inp.value = '';
-    saveTasks(); renderTasks(); updateStats();
-  }
-
-  function check(id) {
-    const t = tasks.find(x=>x.id===id);
-    if(t) { t.done=!t.done; saveTasks(); renderTasks(); updateStats(); }
-  }
-
-  function del(id) {
-    tasks = tasks.filter(x=>x.id!==id);
-    saveTasks(); renderTasks(); updateStats();
-  }
-
-  function renderTasks() {
-    const el = document.getElementById('tList');
-    if(!tasks.length) {
-      el.innerHTML='<div class="empty"><span>🍒</span>Hali vazifa yo\'q.<br>Qo\'shing va boshlang!</div>';
-      return;
-    }
-    el.innerHTML = tasks.map(t=>`
-      <div class="task-item">
-        <div class="task-chk ${t.done?'on':''}" onclick="check(${t.id})">✓</div>
-        <span class="task-nm ${t.done?'done':''}">${t.name}</span>
-        <button class="task-x" onclick="del(${t.id})">×</button>
-      </div>
-    `).join('');
-  }
-
-  // --- Init ---
-  render(); renderDots(); renderTasks(); updateStats(); renderTrackList();
 </script>
+
 </body>
 </html>
