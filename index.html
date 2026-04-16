@@ -2,152 +2,164 @@
 <html lang="uz">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Olcha PRO — Focus</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Olcha — Focus Timer</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 
 <style>
-body{
-  margin:0;
-  font-family:Arial;
-  background:#f5f5f5;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  height:100vh;
-}
+  :root {
+    --red: #C0593A;
+    --red-light: #FAECE7;
+    --red-dark: #8B3A22;
+    --bg: #FAFAF8;
+    --bg2: #F3F1EE;
+    --border: rgba(0,0,0,0.08);
+    --text: #1A1A18;
+    --text2: #6B6B66;
+    --white: #FFFFFF;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.07);
+  }
 
-.card{
-  background:#fff;
-  padding:20px;
-  border-radius:20px;
-  width:320px;
-  text-align:center;
-  box-shadow:0 10px 30px rgba(0,0,0,0.1);
-}
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
-.time{
-  font-size:40px;
-  margin:20px 0;
-}
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 0 40px;
+    overflow-x: hidden;
+  }
 
-button{
-  padding:10px 15px;
-  margin:5px;
-  border:none;
-  border-radius:10px;
-  cursor:pointer;
-}
+  .status-bar {
+    width: 100%;
+    max-width: 430px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 20px 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text2);
+  }
 
-.start{background:#C0593A;color:#fff;}
-.stop{background:#444;color:#fff;}
+  .wrap { width: 100%; max-width: 430px; padding: 0 16px; }
 
-small{color:gray;}
+  .header { display: flex; align-items: center; gap: 10px; padding: 20px 0 16px; }
+
+  .logo-icon {
+    width: 40px; height: 40px;
+    background: var(--red);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .timer-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: var(--shadow);
+  }
+
+  .time-display {
+    font-size: 44px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .btn-start {
+    background: var(--red);
+    color: white;
+    border: none;
+    padding: 15px 25px;
+    border-radius: 50px;
+    cursor: pointer;
+  }
 </style>
 </head>
 
 <body>
 
-<div class="card">
-  <h2>🍒 Olcha PRO</h2>
-
-  <div class="time" id="time">25:00</div>
-
-  <button class="start" onclick="startAll()">Start</button>
-  <button class="stop" onclick="stopAll()">Stop</button>
-
-  <br><br>
-
-  🌧️ Rain volume<br>
-  <input type="range" min="0" max="100" value="40" oninput="setRain(this.value)">
-
-  <br><br>
-  <small>Focus + Rain + Music</small>
-</div>
-
-<!-- 🌧️ RAIN AUDIO -->
-<audio id="rain" loop>
+<!-- 🌧️ YOMG‘IR AUDIO (QO‘SHILDI) -->
+<audio id="rainAudio" loop>
   <source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8f6b2b2.mp3?filename=rain-ambient-110622.mp3" type="audio/mpeg">
 </audio>
 
+<div class="status-bar">
+  <span id="clockNow">09:41</span>
+  <span>📶 🔋</span>
+</div>
+
+<div class="wrap">
+
+  <div class="header">
+    <div class="logo-icon">🍒</div>
+    <div>
+      <h1>Olcha</h1>
+      <p>Focus Timer</p>
+    </div>
+  </div>
+
+  <div class="timer-card">
+    <div class="time-display" id="tDisp">45:00</div>
+
+    <button class="btn-start" id="startBtn" onclick="toggleTimer()">Start</button>
+  </div>
+
+</div>
+
 <script>
-let t = 25*60;
-let iv = null;
-let running = false;
+  let totalSecs = 45*60;
+  let remaining = totalSecs;
+  let running = false;
+  let iv = null;
 
-let audioCtx = null;
-let rain = document.getElementById("rain");
+  // 🌧️ RAIN AUDIO
+  const rainAudio = document.getElementById("rainAudio");
 
-// TIMER
-function startTimer(){
-  iv = setInterval(()=>{
-    if(t<=0){
-      stopAll();
-      return;
+  function toggleTimer() {
+    if (running) {
+      clearInterval(iv);
+      running = false;
+      document.getElementById("startBtn").textContent = "Start";
+
+      // STOP RAIN
+      rainAudio.pause();
+      rainAudio.currentTime = 0;
+
+    } else {
+      running = true;
+      document.getElementById("startBtn").textContent = "Pauza";
+
+      // START RAIN (FIXED)
+      rainAudio.volume = 0.4;
+      rainAudio.currentTime = 0;
+      rainAudio.play().catch(()=>{});
+
+      iv = setInterval(() => {
+        remaining--;
+
+        let m = String(Math.floor(remaining/60)).padStart(2,"0");
+        let s = String(remaining%60).padStart(2,"0");
+
+        document.getElementById("tDisp").textContent = m+":"+s;
+
+        if (remaining <= 0) {
+          clearInterval(iv);
+          running = false;
+          document.getElementById("startBtn").textContent = "Start";
+
+          rainAudio.pause();
+          rainAudio.currentTime = 0;
+        }
+
+      }, 1000);
     }
-    t--;
-    let m = String(Math.floor(t/60)).padStart(2,"0");
-    let s = String(t%60).padStart(2,"0");
-    document.getElementById("time").innerText = m+":"+s;
-  },1000);
-}
-
-// 🌧️ + 🎵 START
-function startAll(){
-
-  if(!running){
-    running = true;
-
-    // audio context (required fix)
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-    // rain start (fixed)
-    rain.volume = 0.4;
-    rain.currentTime = 0;
-
-    rain.play().catch(e=>{
-      console.log("Rain blocked:", e);
-    });
-
-    // soft focus tone (optional PRO vibe)
-    let osc = audioCtx.createOscillator();
-    let gain = audioCtx.createGain();
-
-    osc.type = "sine";
-    osc.frequency.value = 200;
-    gain.gain.value = 0.03;
-
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-
-    osc.start();
-
-    startTimer();
   }
-}
-
-// STOP EVERYTHING
-function stopAll(){
-  running = false;
-  clearInterval(iv);
-  t = 25*60;
-
-  document.getElementById("time").innerText = "25:00";
-
-  if(rain){
-    rain.pause();
-    rain.currentTime = 0;
-  }
-
-  if(audioCtx){
-    audioCtx.close();
-    audioCtx = null;
-  }
-}
-
-// RAIN CONTROL
-function setRain(v){
-  rain.volume = v/100;
-}
 </script>
 
 </body>
