@@ -462,7 +462,7 @@
   let audioCtx = null, musicNodes = [], musicOn = false;
   let masterGain = null, currentTrackIdx = 0, volLevel = 0.70;
 
-  // 8 unique lo-fi tracks defined as note sequences + style config
+  // 8 unique lo-fi tracks + 1 rain sound
   const TRACKS = [
     { name: '🌿 Lo-fi Tinch',    bpm: 75,  bass: [65,65,60,62], melody: [523,659,784,659,587,523,440,523], wave:'sine',    color:'#4CAF50' },
     { name: '🌙 Kech Sakin',     bpm: 60,  bass: [55,55,58,53], melody: [440,494,523,587,523,494,440,415], wave:'triangle',color:'#5C6BC0' },
@@ -471,8 +471,8 @@
     { name: '☕ Ertalab Qahva',  bpm: 80,  bass: [73,73,68,70], melody: [587,659,740,659,622,587,523,587], wave:'triangle',color:'#795548' },
     { name: '⚡ Tez Ritm',       bpm: 110, bass: [98,98,92,95], melody: [784,880,988,880,831,784,740,784], wave:'sawtooth',color:'#FF6F00' },
     { name: '🎹 Piano Hissi',    bpm: 65,  bass: [58,58,62,55], melody: [494,523,587,659,587,523,494,440], wave:'triangle',color:'#AB47BC' },
-    { name: '🌧️ Yomg\'ir Tinchligi', bpm: 3000, bass: [73,92,45,55], melody: [764,885,288,850,821,774,760,786], wave: 'noise', color: '#5DADE2'},
     { name: '🌸 Bahor Shabadi',  bpm: 70,  bass: [61,61,65,58], melody: [554,622,698,622,587,554,494,554], wave:'sine',    color:'#EC407A' },
+    { name: '🌧️ Yomg\'ir Ovozi', bpm: 0,   bass: [], melody: [], wave:'rain', color:'#29B6F6' },
   ];
 
   function renderTrackList() {
@@ -514,6 +514,82 @@
     masterGain.connect(audioCtx.destination);
 
     const track = TRACKS[currentTrackIdx];
+
+    // ---- RAIN MODE ----
+    if (track.wave === 'rain') {
+      // White noise base (rain body)
+      const bufSize = audioCtx.sampleRate * 3;
+      const noiseBuf = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
+      const nd = noiseBuf.getChannelData(0);
+      for (let i = 0; i < bufSize; i++) nd[i] = Math.random() * 2 - 1;
+
+      const noiseLoop = audioCtx.createBufferSource();
+      noiseLoop.buffer = noiseBuf;
+      noiseLoop.loop = true;
+      const noiseGain = audioCtx.createGain();
+      noiseGain.gain.setValueAtTime(0.55, audioCtx.currentTime);
+
+      // Bandpass filter — gives "rain" warmth
+      const bp = audioCtx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.setValueAtTime(1200, audioCtx.currentTime);
+      bp.Q.value = 0.4;
+
+      // Lowpass for softness
+      const lp = audioCtx.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.setValueAtTime(4000, audioCtx.currentTime);
+
+      noiseLoop.connect(bp); bp.connect(lp); lp.connect(noiseGain); noiseGain.connect(masterGain);
+      noiseLoop.start();
+      musicNodes.push(noiseLoop, noiseGain, bp, lp);
+
+      // Individual drip sounds
+      function drip() {
+        if (!musicOn) return;
+        const dBuf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.08, audioCtx.sampleRate);
+        const dd = dBuf.getChannelData(0);
+        for (let i = 0; i < dd.length; i++) dd[i] = (Math.random() * 2 - 1) * Math.exp(-i / (dd.length * 0.2));
+        const src = audioCtx.createBufferSource();
+        src.buffer = dBuf;
+        const g = audioCtx.createGain();
+        g.gain.setValueAtTime(Math.random() * 0.35 + 0.1, audioCtx.currentTime);
+        const f = audioCtx.createBiquadFilter();
+        f.type = 'bandpass';
+        f.frequency.setValueAtTime(800 + Math.random() * 2400, audioCtx.currentTime);
+        src.connect(f); f.connect(g); g.connect(masterGain);
+        src.start();
+        setTimeout(drip, Math.random() * 120 + 40);
+      }
+      drip();
+
+      // Thunder rumble (low bass roll) every 15-25s
+      function thunder() {
+        if (!musicOn) return;
+        const tBuf = audioCtx.createBuffer(1, audioCtx.sampleRate * 2, audioCtx.sampleRate);
+        const td = tBuf.getChannelData(0);
+        for (let i = 0; i < td.length; i++) td[i] = (Math.random() * 2 - 1) * Math.exp(-i / (td.length * 0.3));
+        const src = audioCtx.createBufferSource();
+        src.buffer = tBuf;
+        const g = audioCtx.createGain();
+        g.gain.setValueAtTime(0.45, audioCtx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 2);
+        const lf = audioCtx.createBiquadFilter();
+        lf.type = 'lowpass'; lf.frequency.value = 180;
+        src.connect(lf); lf.connect(g); g.connect(masterGain);
+        src.start();
+        setTimeout(thunder, (Math.random() * 10000) + 15000);
+      }
+      setTimeout(thunder, 5000);
+
+      musicNodes.push(masterGain);
+      document.getElementById('musicToggleBtn').textContent = 'O\'chirish';
+      document.getElementById('musicToggleBtn').style.background = '#666';
+      renderTrackList();
+      return;
+    }
+    // ---- END RAIN MODE ----
+
     const beatInterval = 60 / track.bpm;
 
     // Bass pulse
